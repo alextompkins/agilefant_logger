@@ -200,7 +200,7 @@ def post_effort_entry(jsession_id, entry):
 	opener = build_opener()
 	opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
 	res = opener.open(request)
-	print("Security check (login) response code: {}".format(res.getcode()))
+	print("POST effort entry response: {}".format(res.getcode()))
 
 
 def main():
