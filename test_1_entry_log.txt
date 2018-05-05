@@ -1,0 +1,12 @@
+commit 0d261837552828bcf2305247fbe04d0893096fb1
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 12:22:57 2018 +1200
+
+    Cleaned up the Donor class somewhat:
+    -Changed modified_on and created_on to createdTimestamp and modifiedTimestamp
+    -Refactored getDonorOrganStatusString & getDonorOrgans (which were essentially the same thing)
+    -Applied changes to method names to ViewDonorController & SearchDonorsController
+    #fix #story[358] !task[a]
+    
+    Took 3 minutes
+

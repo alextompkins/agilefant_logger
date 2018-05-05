@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener
 
 
-FILE = "test_1_entry.log"
+FILE = "test_1_entry_log.txt"
 BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
 ITERATION_ID = 76
 USER_ID = 540

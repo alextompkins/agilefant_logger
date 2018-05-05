@@ -1,0 +1,115 @@
+commit cf11f77c47e32ea05284cad9bac5c8d7e0f65b82
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 19:58:09 2018 +1200
+
+    Fixed bug: trying to delete when no list view/item selected would cause a NPE.
+    #fix #story[537] !task[a]
+    
+    Took 3 minutes
+
+commit 8126dbc764d8f6462114dfc13c9ca7c974d48cce
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 19:47:22 2018 +1200
+
+    Javadoc-d MedicationHistoryItem.
+    #document #story[537]
+    
+    Took 3 minutes
+
+commit 68153bba388259a4c85ab03f56a4e80da2248d94
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 19:43:58 2018 +1200
+
+    Javadoc-d ViewMedicationsController.
+    #document #story[537]
+    
+    Took 22 minutes
+
+commit 852dbb911582b5343ddcb7496c4742703fca3323
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 18:20:51 2018 +1200
+
+    Set the medications page to not be editable if logged in as a donor.
+    -Also fixed a small issue with trying to move an item if nothing is selected.
+    #fix #story[537]
+    
+    Took 15 minutes
+
+commit 1951866ddb2fb42900cd6a67dd07c1a5d9deb661
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 18:03:52 2018 +1200
+
+    Refactored the View Medications page to use two list views & assorted buttons instead of the ControlsFX ListSelectionView.
+    -Necessary because the ListSelectionView had no way to retrieve the selection model.
+    -All previous functionality works (more cleanly too).
+    -Delete button now works.
+    -Can now only select in one of the two lists at a time.
+    #refactor #story[537] !task[e]
+    
+    Took 34 minutes
+
+commit df8260dae675e6ec367bdb366c0373bf36f26d78
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 17:25:23 2018 +1200
+
+    Fixed issues with pastMedications & currentMedications add listeners.
+    Added deleteMedication button, but can't use it to delete anything yet because of the lack of ability to retrieved selected items from a ListSelectionView.
+    #fix #story[537]
+    
+    Took 54 minutes
+
+commit d52dfc4eb3af04ae610117208b2ac8b6a0060fa6
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 14:56:15 2018 +1200
+
+    Changed the tests to line up with the slightly refactored getOrganStatusString method in Donor
+    
+    Took 14 minutes
+
+commit b5b1ddf4c1b468e4710fc2960417a269b1bfff22
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 14:40:54 2018 +1200
+
+    Implemented basic functionality for view medications page.
+    -Added controlsfx dependency.
+    -Changed Donor to store two lists of MedicationHistoryItems - one past and one current
+    -Changed MedicationHistoryItem to use LocalDates instead of LocalDateTimes
+    -Implemented a controlsfx ListSelectionView for the page itself.
+    -Added listeners for when enter key is pressed on the new medication field, when medications are moved between the two observable lists (to set their started/stopped dates), and an empty one for autocompletion on the text field
+    #implement #story[543]
+    
+    Took 1 hour 27 minutes
+
+commit bc3970bc1ccbdb7ab4ed78102ee187fd54a0b342
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 12:55:29 2018 +1200
+
+    Added new view medications page.
+    -Created FXML file and Controller.
+    -Added to sidebar and Page enum.
+    -Just basic page implemented, functionality still to come.
+    #implement #story[543]
+    
+    Took 26 minutes
+
+commit 0d261837552828bcf2305247fbe04d0893096fb1
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 12:22:57 2018 +1200
+
+    Cleaned up the Donor class somewhat:
+    -Changed modified_on and created_on to createdTimestamp and modifiedTimestamp
+    -Refactored getDonorOrganStatusString & getDonorOrgans (which were essentially the same thing)
+    -Applied changes to method names to ViewDonorController & SearchDonorsController
+    #fix #story[543]
+    
+    Took 3 minutes
+
+commit b907ead9e2a747661ef4766fe7a3d739149cffbe
+Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Date:   Thu Apr 5 12:05:32 2018 +1200
+
+    Implemented new MedicationHistoryItem class to store details of a user taking some medication currently/previously.
+    #implement #story[537]
+    
+    Took 23 minutes
+
