@@ -1,8 +1,13 @@
+import json
 import re
 from datetime import datetime
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen, build_opener
 
 
 FILE = "test_12_entries.log"
+BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
+ITERATION_ID = 76
 
 patterns = {
 	'COMMIT': re.compile("commit ([a-f0-9]{40})"),
@@ -10,7 +15,17 @@ patterns = {
 	'DATE': re.compile("Date: (.*)"),
 	'STORY': re.compile("#story\[([0-9]+)\]"),
 	'TASK': re.compile("!task\[([a-zA-Z]+)\]"),
-	'TIME_SPENT': re.compile("Took (?:([0-9]+) hours? )?([0-9]+) minutes?")
+	'TIME_SPENT': re.compile("Took (?:([0-9]+) hours? )?([0-9]+) minutes?"),
+	'TASK_CODE': re.compile("([a-zA-Z]+):")
+}
+
+urls = {
+	'LOGIN': "login.jsp",
+	'SECURITY_CHECK': "j_spring_security_check",
+	'LOGOUT': "j_spring_security_logout?exit=Logout",
+	'ITERATION_DATA': "ajax/iterationData.action?iterationId={}",
+	'RETRIEVE_EFFORT_ENTRIES': "ajax/retrieveTaskHourEntries.action?parentObjectId={}",
+	'LOG_TASK_EFFORT': "ajax/logTaskEffort.action"
 }
 
 
@@ -99,12 +114,73 @@ def parse_commit(text):
 	return Commit(**commit)
 
 
-def main():
-	with open(FILE, 'r') as file:
-		commit_strings = separate_commits(file.read())
+def find_task_id(iteration_data, story_id, task_code):
+	for story in iteration_data['rankedStories']:
+		if story['id'] == story_id:
+			for task in story['tasks']:
+				match = patterns['TASK_CODE'].match(task['name'])
+				if match and match.group(1) == task_code:
+					return task['id']
+	return None
 
-	for commit in commit_strings:
-		print(str(parse_commit(commit)) + "\n")
+
+def get_jsession_id():
+	res = urlopen(BASE_URL + urls['LOGIN'])
+	cookies = res.getheader('Set-Cookie')
+	return cookies[cookies.find("JSESSIONID=") + len("JSESSIONID="):cookies.find(";")]
+
+
+def login(jsession_id, username, password):
+	post_fields = {
+		'j_username': username,
+		'j_password': password
+	}
+
+	request = Request(BASE_URL + urls['SECURITY_CHECK'], urlencode(post_fields).encode())
+	opener = build_opener()
+	opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
+	res = opener.open(request)
+	print("Security check (login) response code: {}".format(res.getcode()))
+
+
+def logout(jsession_id):
+	opener = build_opener()
+	opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
+	res = opener.open(BASE_URL + urls['LOGOUT'])
+	print("Logout response code: {}".format(res.getcode()))
+
+
+def get_iteration_data(jsession_id, iteration_id):
+	try:
+		opener = build_opener()
+		opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
+		res = opener.open(BASE_URL + urls['ITERATION_DATA'].format(iteration_id))
+		return json.loads(res.read().decode())
+	except ValueError:
+		print("An error occurred when getting the iteration data. Check that the iteration id provided is correct.")
+		return None
+
+
+def main():
+	# with open(FILE, 'r') as file:
+	# 	commit_strings = separate_commits(file.read())
+	#
+	# for commit in commit_strings:
+	# 	print(str(parse_commit(commit)) + "\n")
+
+	jsession_id = get_jsession_id()
+	print(jsession_id)
+	login(jsession_id, "USERNAME", "PASSWORD")
+	iteration = get_iteration_data(jsession_id, ITERATION_ID)
+	logout(jsession_id)
+
+	for story in iteration['rankedStories']:
+		print("Story {}: {}".format(story['id'], story['name']))
+		for task in story['tasks']:
+			task['name'] = "a: " + task['name']
+			print("\tTask {}: {}".format(task['id'], task['name']))
+
+	print(find_task_id(iteration, 358, "a"))
 
 
 if __name__ == '__main__':
