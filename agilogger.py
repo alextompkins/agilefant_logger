@@ -1,13 +1,14 @@
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener
 
 
-FILE = "test_12_entries.log"
+FILE = "test_1_entry.log"
 BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
 ITERATION_ID = 76
+USER_ID = 540
 
 patterns = {
 	'COMMIT': re.compile("commit ([a-f0-9]{40})"),
@@ -71,10 +72,43 @@ class Commit:
 			.format(self.commit_hash, self.author, self.email, self.date, self.description, str(self.tags),
 					self.get_mins_spent())
 
+	def build_effort_entry(self, iteration_data, user_id):
+		if 'task' not in self.tags:
+			raise ValueError("Task tag is not present, so effort entry cannot be created.")
+		else:
+			task_id = find_task_id(iteration_data, self.tags['story'], self.tags['task'])
+			return EffortEntry(self.date, self.get_mins_spent(),
+							   self.description + " #commits[{}]".format(self.tags['commits']), task_id, user_id)
+
 
 class EffortEntry:
-	def __init__(self, date, minutes_spent, description, story_id, task_id, user_id):
-		pass
+	def __init__(self, date, minutes_spent, description, task_id, user_id):
+		epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+		self.date = int((date - epoch).total_seconds()) * 1000
+		self.minutes_spent = minutes_spent
+		self.description = description
+		self.task_id = task_id
+		self.user_id = user_id
+
+		if None in (self.date, self.minutes_spent, self.description, self.task_id, self.user_id):
+			raise ValueError("This is not a valid EffortEntry.")
+
+	def get_post_data(self):
+		return {
+			"hourEntry.date": self.date,
+			"hourEntry.description": self.description,
+			"hourEntry.minutesSpent": self.minutes_spent,
+			"parentObjectId" : self.task_id,
+			"userIds": self.user_id
+		}
+
+	def __str__(self):
+		return ("hourEntry.date={}\n" +
+				"hourEntry.description={}\n" +
+				"hourEntry.minutesSpent={}\n" +
+				"parentObjectId={}\n" +
+				"userIds={}")\
+				.format(self.date, self.description, self.minutes_spent, self.task_id, self.user_id)
 
 
 def separate_commits(log):
@@ -161,18 +195,26 @@ def get_iteration_data(jsession_id, iteration_id):
 		return None
 
 
+def post_effort_entry(jsession_id, entry):
+	request = Request(BASE_URL + urls['LOG_TASK_EFFORT'], urlencode(entry.get_post_data()).encode())
+	opener = build_opener()
+	opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
+	res = opener.open(request)
+	print("Security check (login) response code: {}".format(res.getcode()))
+
+
 def main():
-	# with open(FILE, 'r') as file:
-	# 	commit_strings = separate_commits(file.read())
-	#
-	# for commit in commit_strings:
-	# 	print(str(parse_commit(commit)) + "\n")
+	commits = list()
+	with open(FILE, 'r') as file:
+		commit_strings = separate_commits(file.read())
+
+	for commit in commit_strings:
+		commits.append(parse_commit(commit))
 
 	jsession_id = get_jsession_id()
 	print(jsession_id)
 	login(jsession_id, "USERNAME", "PASSWORD")
 	iteration = get_iteration_data(jsession_id, ITERATION_ID)
-	logout(jsession_id)
 
 	for story in iteration['rankedStories']:
 		print("Story {}: {}".format(story['id'], story['name']))
@@ -180,7 +222,16 @@ def main():
 			task['name'] = "a: " + task['name']
 			print("\tTask {}: {}".format(task['id'], task['name']))
 
-	print(find_task_id(iteration, 358, "a"))
+	for commit in commits:
+		print("\n" + str(commit))
+		try:
+			entry = commit.build_effort_entry(iteration, user_id=USER_ID)
+		except ValueError as exc:
+			print(exc)
+
+	print(entry)
+	post_effort_entry(jsession_id, entry)
+	logout(jsession_id)
 
 
 if __name__ == '__main__':
