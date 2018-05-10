@@ -1,5 +1,5 @@
 commit cf11f77c47e32ea05284cad9bac5c8d7e0f65b82
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 19:58:09 2018 +1200
 
     Fixed bug: trying to delete when no list view/item selected would cause a NPE.
@@ -8,7 +8,7 @@ Date:   Thu Apr 5 19:58:09 2018 +1200
     Took 3 minutes
 
 commit 8126dbc764d8f6462114dfc13c9ca7c974d48cce
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 19:47:22 2018 +1200
 
     Javadoc-d MedicationHistoryItem.
@@ -17,7 +17,7 @@ Date:   Thu Apr 5 19:47:22 2018 +1200
     Took 3 minutes
 
 commit 68153bba388259a4c85ab03f56a4e80da2248d94
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 19:43:58 2018 +1200
 
     Javadoc-d ViewMedicationsController.
@@ -26,7 +26,7 @@ Date:   Thu Apr 5 19:43:58 2018 +1200
     Took 22 minutes
 
 commit 852dbb911582b5343ddcb7496c4742703fca3323
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 18:20:51 2018 +1200
 
     Set the medications page to not be editable if logged in as a donor.
@@ -36,7 +36,7 @@ Date:   Thu Apr 5 18:20:51 2018 +1200
     Took 15 minutes
 
 commit 1951866ddb2fb42900cd6a67dd07c1a5d9deb661
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 18:03:52 2018 +1200
 
     Refactored the View Medications page to use two list views & assorted buttons instead of the ControlsFX ListSelectionView.
@@ -49,7 +49,7 @@ Date:   Thu Apr 5 18:03:52 2018 +1200
     Took 34 minutes
 
 commit df8260dae675e6ec367bdb366c0373bf36f26d78
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 17:25:23 2018 +1200
 
     Fixed issues with pastMedications & currentMedications add listeners.
@@ -59,7 +59,7 @@ Date:   Thu Apr 5 17:25:23 2018 +1200
     Took 54 minutes
 
 commit d52dfc4eb3af04ae610117208b2ac8b6a0060fa6
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 14:56:15 2018 +1200
 
     Changed the tests to line up with the slightly refactored getOrganStatusString method in Donor
@@ -67,7 +67,7 @@ Date:   Thu Apr 5 14:56:15 2018 +1200
     Took 14 minutes
 
 commit b5b1ddf4c1b468e4710fc2960417a269b1bfff22
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 14:40:54 2018 +1200
 
     Implemented basic functionality for view medications page.
@@ -81,7 +81,7 @@ Date:   Thu Apr 5 14:40:54 2018 +1200
     Took 1 hour 27 minutes
 
 commit bc3970bc1ccbdb7ab4ed78102ee187fd54a0b342
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 12:55:29 2018 +1200
 
     Added new view medications page.
@@ -93,7 +93,7 @@ Date:   Thu Apr 5 12:55:29 2018 +1200
     Took 26 minutes
 
 commit 0d261837552828bcf2305247fbe04d0893096fb1
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 12:22:57 2018 +1200
 
     Cleaned up the Donor class somewhat:
@@ -105,7 +105,7 @@ Date:   Thu Apr 5 12:22:57 2018 +1200
     Took 3 minutes
 
 commit b907ead9e2a747661ef4766fe7a3d739149cffbe
-Author: Alex Tompkins <USERNAME@uclive.ac.nz>
+Author: Alex Tompkins <ato47@uclive.ac.nz>
 Date:   Thu Apr 5 12:05:32 2018 +1200
 
     Implemented new MedicationHistoryItem class to store details of a user taking some medication currently/previously.

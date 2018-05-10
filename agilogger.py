@@ -267,8 +267,7 @@ def post_effort_entry(jsession_id, entry):
 	request = Request(BASE_URL + urls['LOG_TASK_EFFORT'], urlencode(entry.get_post_data()).encode())
 	opener = build_opener()
 	opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
-	res = opener.open(request)
-	print("POST effort entry response: {}".format(res.getcode()))
+	opener.open(request)
 
 
 def main():
