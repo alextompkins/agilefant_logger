@@ -1,34 +1,9 @@
 import json
-import re
 import textwrap
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener
-
-
-FILE = "test_1_entry_log.txt"
-BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
-ITERATION_ID = 76
-USER_ID = 540
-
-patterns = {
-	'COMMIT': re.compile("commit ([a-f0-9]{40})"),
-	'AUTHOR': re.compile("Author: (.*) <(.*)>"),
-	'DATE': re.compile("Date: (.*)"),
-	'STORY': re.compile("#story\[([0-9]+)\]"),
-	'TASK': re.compile("!task\[([a-zA-Z]+)\]"),
-	'TIME_SPENT': re.compile("Took (?:([0-9]+) hours? )?([0-9]+) minutes?"),
-	'TASK_CODE': re.compile("([a-zA-Z]+):")
-}
-
-urls = {
-	'LOGIN': "login.jsp",
-	'SECURITY_CHECK': "j_spring_security_check",
-	'LOGOUT': "j_spring_security_logout?exit=Logout",
-	'ITERATION_DATA': "ajax/iterationData.action?iterationId={}",
-	'RETRIEVE_EFFORT_ENTRIES': "ajax/retrieveTaskHourEntries.action?parentObjectId={}",
-	'LOG_TASK_EFFORT': "ajax/logTaskEffort.action"
-}
+from config import *
 
 
 class Commit:
@@ -51,7 +26,7 @@ class Commit:
 		if match:
 			tags['task'] = match.group(1)
 
-		tags['commits'] = self.commit_hash[:7]
+		tags['commits'] = self.commit_hash[:8]
 
 		return tags
 
@@ -247,8 +222,7 @@ def login(jsession_id, username, password):
 def logout(jsession_id):
 	opener = build_opener()
 	opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
-	res = opener.open(BASE_URL + urls['LOGOUT'])
-	print("Logout response code: {}".format(res.getcode()))
+	opener.open(BASE_URL + urls['LOGOUT'])
 
 
 def get_iteration_data(jsession_id, iteration_id):
@@ -259,6 +233,17 @@ def get_iteration_data(jsession_id, iteration_id):
 		return json.loads(res.read().decode())
 	except ValueError:
 		print("An error occurred when getting the iteration data. Check that the iteration id provided is correct.")
+		return None
+
+
+def get_effort_entries_for_task(jsession_id, task_id):
+	try:
+		opener = build_opener()
+		opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
+		res = opener.open(BASE_URL + urls['RETRIEVE_EFFORT_ENTRIES'].format(task_id))
+		return json.loads(res.read().decode())
+	except ValueError:
+		print("An error occurred when getting the effort entry data for task {}.".format(task_id))
 		return None
 
 
@@ -279,11 +264,10 @@ def main():
 		commits.append(parse_commit(commit))
 
 	jsession_id = get_jsession_id()
-	print(jsession_id)
 	login(jsession_id, "USERNAME", "PASSWORD")
-	iteration = get_iteration_data(jsession_id, ITERATION_ID)
+	iteration_data = get_iteration_data(jsession_id, ITERATION_ID)
 
-	for story in iteration['rankedStories']:
+	for story in iteration_data['rankedStories']:
 		print("Story {}: {}".format(story['id'], story['name']))
 		for task in story['tasks']:
 			task['name'] = "a: " + task['name']
@@ -292,8 +276,14 @@ def main():
 	for commit in commits:
 		print("\n" + str(commit) + "\n")
 		try:
-			entry = commit.build_effort_entry(iteration, user_id=USER_ID)
-			print(entry)
+			new_entry = commit.build_effort_entry(iteration_data, user_id=USER_ID)
+			current_entries = get_effort_entries_for_task(jsession_id, new_entry.task_id)
+			for entry in current_entries:
+				if "#commits[{}".format(commit.commit_hash[:8]) in entry['description']:
+					raise ValueError("An effort entry already exists for this commit on agilefant.")
+
+			post_effort_entry(jsession_id, new_entry)
+			print("Effort entry posted to agilefant.")
 		except ValueError as exc:
 			print(exc)
 
