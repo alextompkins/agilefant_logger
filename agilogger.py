@@ -52,8 +52,8 @@ class Commit:
 
 	def __str__(self):
 		return "Commit {} by {} <{}>\n\t{}\n\t{}\n\tTags: {}\n\tTime spent: {} mins"\
-			.format(self.commit_hash, self.author, self.email, self.date,
-					"\n\t\t".join(textwrap.wrap(self.description, 100)), str(self.tags), self.get_mins_spent())
+			.format(self.commit_hash[:8], self.author, self.email, self.date,
+					"\n\t".join(textwrap.wrap(self.description)), str(self.tags), self.get_mins_spent())
 
 	def build_effort_entry(self, iteration_data, user_id):
 		if not ('story' in self.tags and 'task' in self.tags):
@@ -107,7 +107,7 @@ class EffortEntry:
 				"hourEntry.minutesSpent={}\n" +
 				"parentObjectId={}\n" +
 				"userIds={}")\
-				.format(self.date, "\n".join(textwrap.wrap(self.description, 100)),
+				.format(self.date, "\n".join(textwrap.wrap(self.description)),
 						self.minutes_spent, self.task_id, self.user_id)
 
 
@@ -133,7 +133,7 @@ def get_minutes_spent_from_user_input():
 def get_story_and_task_tags_from_user_input():
 	while True:
 		try:
-			story_id = int(input("Enter the agilefant iteration id (e.g. 751) for this commit's story: "))
+			story_id = int(input("Enter the story id (e.g. 751) for this commit: "))
 		except ValueError:
 			print("Story id must be an integer.")
 			continue
@@ -175,7 +175,7 @@ def parse_commit(text):
 
 	for line in text.split("\n"):
 		if patterns['COMMIT'].match(line):
-			commit['hash'] = patterns['COMMIT'].match(line).group(1)
+			commit['commit_hash'] = patterns['COMMIT'].match(line).group(1)
 			
 		elif patterns['AUTHOR'].match(line):
 			commit['author'], commit['email'] = patterns['AUTHOR'].match(line).groups()
@@ -256,6 +256,8 @@ def get_effort_entries_for_task(jsession_id, task_id):
 		opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
 		res = opener.open(BASE_URL + urls['RETRIEVE_EFFORT_ENTRIES'].format(task_id))
 		return json.loads(res.read().decode())
+	except HTTPError:
+		raise ValueError("That story/task does not exist.")
 	except ValueError:
 		print("An error occurred when getting the effort entry data for task {}.".format(task_id))
 		return None
@@ -270,6 +272,9 @@ def post_effort_entry(jsession_id, entry):
 
 
 def main():
+	username = input("Enter your agilefant username: ")
+	password = getpass("Enter your agilefant password: ")
+
 	commits = list()
 	if 'FILE' in globals():
 		print("Reading commit log from '{}'...".format(globals()['FILE']))
@@ -279,7 +284,7 @@ def main():
 		print("Using 'git log' to get commits...")
 		try:
 			n = int(input("How many of your recent commits should the script parse? (starting with the most recent): "))
-			log = subprocess.check_output(['git', 'log', '-n {}'.format(n), '--author="USERNAME"', '--all', '--reverse']).decode()
+			log = subprocess.check_output("git log -n {} --author=\"{}\" --all --reverse".format(n, username), shell=True).decode()
 		except ValueError:
 			print("That is not a valid number.")
 			return
@@ -288,8 +293,6 @@ def main():
 	for commit in commit_strings:
 		commits.append(parse_commit(commit))
 
-	username = input("Enter your agilefant username: ")
-	password = getpass("Enter your agilefant password: ")
 	jsession_id = get_jsession_id()
 	if not login(jsession_id, username, password):
 		print("Could not log in to agilefant with the provided username and password. \n"
@@ -307,7 +310,7 @@ def main():
 
 			else:
 				for commit in commits:
-					print("\n" + str(commit))
+					print("\n\n" + str(commit))
 					try:
 						new_entry = commit.build_effort_entry(iteration_data, user_id=user_id)
 						current_entries = get_effort_entries_for_task(jsession_id, new_entry.task_id)
@@ -323,4 +326,7 @@ def main():
 
 
 if __name__ == '__main__':
-	main()
+	try:
+		main()
+	except KeyboardInterrupt:
+		exit()
