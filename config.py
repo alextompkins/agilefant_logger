@@ -4,7 +4,6 @@ import re
 FILE = "test_log.txt"
 BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
 ITERATION_ID = 210
-USER_ID = 540
 
 patterns = {
 	'COMMIT': re.compile("commit ([a-f0-9]{40})"),

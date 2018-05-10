@@ -1,7 +1,9 @@
 import json
 import textwrap
+import subprocess
 from datetime import datetime, timezone
 from getpass import getpass
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener
 from config import *
@@ -95,7 +97,7 @@ class EffortEntry:
 			"hourEntry.date": self.date,
 			"hourEntry.description": self.description,
 			"hourEntry.minutesSpent": self.minutes_spent,
-			"parentObjectId" : self.task_id,
+			"parentObjectId": self.task_id,
 			"userIds": self.user_id
 		}
 
@@ -231,10 +233,21 @@ def get_iteration_data(jsession_id, iteration_id):
 		opener = build_opener()
 		opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
 		res = opener.open(BASE_URL + urls['ITERATION_DATA'].format(iteration_id))
-		return json.loads(res.read().decode())
-	except ValueError:
-		print("An error occurred when getting the iteration data. Check that the iteration id provided is correct.")
+		if res.getcode() == 200:
+			return json.loads(res.read().decode())
+		else:
+			return None
+	except HTTPError:
 		return None
+	except ValueError:
+		return None
+
+
+def find_user_id_matching_username(iteration_data, username):
+	for assignee in iteration_data['assignees']:
+		if assignee['initials'] == username:
+			return assignee['id']
+	return None
 
 
 def get_effort_entries_for_task(jsession_id, task_id):
@@ -258,9 +271,15 @@ def post_effort_entry(jsession_id, entry):
 
 def main():
 	commits = list()
-	with open(FILE, 'r') as file:
-		commit_strings = separate_commits(file.read())
+	if 'FILE' in globals():
+		print("Reading commit log from '{}'...".format(FILE))
+		with open(FILE, 'r') as file:
+			log = file.read()
+	else:
+		print("Using 'git log' to get commits...")
+		log = subprocess.check_output(['git', 'log', '-n 10', '--author="USERNAME"', '--all', '--reverse']).decode()
 
+	commit_strings = separate_commits(log)
 	for commit in commit_strings:
 		commits.append(parse_commit(commit))
 
@@ -270,26 +289,31 @@ def main():
 	if not login(jsession_id, username, password):
 		print("Could not log in to agilefant with the provided username and password. \n"
 			  "Check that the server is accessible and that your credentials are correct.")
+
 	else:
 		iteration_data = get_iteration_data(jsession_id, ITERATION_ID)
-		for story in iteration_data['rankedStories']:
-			print("Story {}: {}".format(story['id'], story['name']))
-			for task in story['tasks']:
-				print("\tTask {}: {}".format(task['id'], task['name']))
+		if iteration_data is None:
+			print("Error: No iteration with id {} exists in agilefant.".format(ITERATION_ID))
 
-		for commit in commits:
-			print("\n" + str(commit))
-			try:
-				new_entry = commit.build_effort_entry(iteration_data, user_id=USER_ID)
-				current_entries = get_effort_entries_for_task(jsession_id, new_entry.task_id)
-				for entry in current_entries:
-					if "#commits[{}".format(commit.commit_hash[:8]) in entry['description']:
-						raise ValueError("An effort entry for this commit already exists on agilefant.")
+		else:
+			user_id = find_user_id_matching_username(iteration_data, username)
+			if user_id is None:
+				print("Error: You are not assigned to the iteration with id {} in agilefant.".format(ITERATION_ID))
 
-				#post_effort_entry(jsession_id, new_entry)
-				print("Effort entry posted to agilefant.")
-			except ValueError as exc:
-				print(exc)
+			else:
+				for commit in commits:
+					print("\n" + str(commit))
+					try:
+						new_entry = commit.build_effort_entry(iteration_data, user_id=user_id)
+						current_entries = get_effort_entries_for_task(jsession_id, new_entry.task_id)
+						for entry in current_entries:
+							if "#commits[{}".format(commit.commit_hash[:8]) in entry['description']:
+								raise ValueError("An effort entry for this commit already exists on agilefant.")
+
+						#post_effort_entry(jsession_id, new_entry)  todo enable posting
+						print("Effort entry posted to agilefant.")
+					except ValueError as exc:
+						print(exc)
 
 		logout(jsession_id)
 
