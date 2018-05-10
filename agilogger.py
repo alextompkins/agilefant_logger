@@ -1,6 +1,7 @@
 import json
 import textwrap
 from datetime import datetime, timezone
+from getpass import getpass
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener
 from config import *
@@ -48,9 +49,9 @@ class Commit:
 			return spent
 
 	def __str__(self):
-		return "Commit {} by {} <{}>\n{}\n{}\nTags: {}\nTime spent: {} mins"\
+		return "Commit {} by {} <{}>\n\t{}\n\t{}\n\tTags: {}\n\tTime spent: {} mins"\
 			.format(self.commit_hash, self.author, self.email, self.date,
-					"\n".join(textwrap.wrap(self.description, 100)), str(self.tags), self.get_mins_spent())
+					"\n\t\t".join(textwrap.wrap(self.description, 100)), str(self.tags), self.get_mins_spent())
 
 	def build_effort_entry(self, iteration_data, user_id):
 		if not ('story' in self.tags and 'task' in self.tags):
@@ -216,7 +217,7 @@ def login(jsession_id, username, password):
 	opener = build_opener()
 	opener.addheaders.append(("Cookie", "JSESSIONID={}".format(jsession_id)))
 	res = opener.open(request)
-	print("Security check (login) response code: {}".format(res.getcode()))
+	return "Invalid username or password" not in res.read().decode()
 
 
 def logout(jsession_id):
@@ -263,31 +264,34 @@ def main():
 	for commit in commit_strings:
 		commits.append(parse_commit(commit))
 
+	username = input("Enter your agilefant username: ")
+	password = input("Enter your agilefant password: ")  #todo replace with getpass
 	jsession_id = get_jsession_id()
-	login(jsession_id, "USERNAME", "PASSWORD")
-	iteration_data = get_iteration_data(jsession_id, ITERATION_ID)
+	if not login(jsession_id, username, password):
+		print("Could not log in to agilefant with the provided username and password. \n"
+			  "Check that the server is accessible and that your credentials are correct.")
+	else:
+		iteration_data = get_iteration_data(jsession_id, ITERATION_ID)
+		for story in iteration_data['rankedStories']:
+			print("Story {}: {}".format(story['id'], story['name']))
+			for task in story['tasks']:
+				print("\tTask {}: {}".format(task['id'], task['name']))
 
-	for story in iteration_data['rankedStories']:
-		print("Story {}: {}".format(story['id'], story['name']))
-		for task in story['tasks']:
-			task['name'] = "a: " + task['name']
-			print("\tTask {}: {}".format(task['id'], task['name']))
+		for commit in commits:
+			print("\n" + str(commit))
+			try:
+				new_entry = commit.build_effort_entry(iteration_data, user_id=USER_ID)
+				current_entries = get_effort_entries_for_task(jsession_id, new_entry.task_id)
+				for entry in current_entries:
+					if "#commits[{}".format(commit.commit_hash[:8]) in entry['description']:
+						raise ValueError("An effort entry for this commit already exists on agilefant.")
 
-	for commit in commits:
-		print("\n" + str(commit) + "\n")
-		try:
-			new_entry = commit.build_effort_entry(iteration_data, user_id=USER_ID)
-			current_entries = get_effort_entries_for_task(jsession_id, new_entry.task_id)
-			for entry in current_entries:
-				if "#commits[{}".format(commit.commit_hash[:8]) in entry['description']:
-					raise ValueError("An effort entry already exists for this commit on agilefant.")
+				#post_effort_entry(jsession_id, new_entry)
+				print("Effort entry posted to agilefant.")
+			except ValueError as exc:
+				print(exc)
 
-			post_effort_entry(jsession_id, new_entry)
-			print("Effort entry posted to agilefant.")
-		except ValueError as exc:
-			print(exc)
-
-	logout(jsession_id)
+		logout(jsession_id)
 
 
 if __name__ == '__main__':

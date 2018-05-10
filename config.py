@@ -1,9 +1,9 @@
 import re
 
 
-FILE = "test_1_entry_log.txt"
+FILE = "test_log.txt"
 BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
-ITERATION_ID = 76
+ITERATION_ID = 210
 USER_ID = 540
 
 patterns = {
