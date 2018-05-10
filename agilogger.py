@@ -6,12 +6,12 @@ from getpass import getpass
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener
-from config import *
+from agilogger_config import *
 
 
 class Commit:
-	def __init__(self, hash, author, email, date, description):
-		self.commit_hash = hash
+	def __init__(self, commit_hash, author, email, date, description):
+		self.commit_hash = commit_hash
 		self.author = author
 		self.email = email
 		self.date = datetime.strptime(date, "%a %b %d %H:%M:%S %Y %z")
@@ -272,19 +272,24 @@ def post_effort_entry(jsession_id, entry):
 def main():
 	commits = list()
 	if 'FILE' in globals():
-		print("Reading commit log from '{}'...".format(FILE))
-		with open(FILE, 'r') as file:
+		print("Reading commit log from '{}'...".format(globals()['FILE']))
+		with open(globals()['FILE'], 'r') as file:
 			log = file.read()
 	else:
 		print("Using 'git log' to get commits...")
-		log = subprocess.check_output(['git', 'log', '-n 10', '--author="USERNAME"', '--all', '--reverse']).decode()
+		try:
+			n = int(input("How many of your recent commits should the script parse? (starting with the most recent): "))
+			log = subprocess.check_output(['git', 'log', '-n {}'.format(n), '--author="USERNAME"', '--all', '--reverse']).decode()
+		except ValueError:
+			print("That is not a valid number.")
+			return
 
 	commit_strings = separate_commits(log)
 	for commit in commit_strings:
 		commits.append(parse_commit(commit))
 
 	username = input("Enter your agilefant username: ")
-	password = input("Enter your agilefant password: ")  #todo replace with getpass
+	password = getpass("Enter your agilefant password: ")
 	jsession_id = get_jsession_id()
 	if not login(jsession_id, username, password):
 		print("Could not log in to agilefant with the provided username and password. \n"
@@ -309,8 +314,7 @@ def main():
 						for entry in current_entries:
 							if "#commits[{}".format(commit.commit_hash[:8]) in entry['description']:
 								raise ValueError("An effort entry for this commit already exists on agilefant.")
-
-						#post_effort_entry(jsession_id, new_entry)  todo enable posting
+						post_effort_entry(jsession_id, new_entry)
 						print("Effort entry posted to agilefant.")
 					except ValueError as exc:
 						print(exc)

@@ -1,7 +1,6 @@
 import re
 
 
-FILE = "test_log.txt"
 BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
 ITERATION_ID = 210
 
