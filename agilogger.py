@@ -1,5 +1,6 @@
 import json
 import re
+import textwrap
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener
@@ -65,20 +66,28 @@ class Commit:
 				spent += int(mins)
 			if hours:
 				spent += int(hours) * 60
-		return spent
+
+		if spent == 0:
+			return None
+		else:
+			return spent
 
 	def __str__(self):
 		return "Commit {} by {} <{}>\n{}\n{}\nTags: {}\nTime spent: {} mins"\
-			.format(self.commit_hash, self.author, self.email, self.date, self.description, str(self.tags),
-					self.get_mins_spent())
+			.format(self.commit_hash, self.author, self.email, self.date,
+					"\n".join(textwrap.wrap(self.description, 100)), str(self.tags), self.get_mins_spent())
 
 	def build_effort_entry(self, iteration_data, user_id):
-		if 'task' not in self.tags:
-			raise ValueError("Task tag is not present, so effort entry cannot be created.")
-		else:
-			task_id = find_task_id(iteration_data, self.tags['story'], self.tags['task'])
-			return EffortEntry(self.date, self.get_mins_spent(),
-							   self.description + " #commits[{}]".format(self.tags['commits']), task_id, user_id)
+		if not ('story' in self.tags and 'task' in self.tags):
+			print("This is not a valid effort entry; its commit message is missing task/story tags.")
+			if input("Do you want to enter the story/task ids for this commit? (y/n): ").lower() == "y":
+				self.tags['story'], self.tags['task'] = get_story_and_task_tags_from_user_input()
+			else:
+				raise ValueError("Task/story tag is not present, so effort entry cannot be created.")
+
+		task_id = find_task_id(iteration_data, self.tags['story'], self.tags['task'])
+		return EffortEntry(self.date, self.get_mins_spent(),
+						   self.description + " #commits[{}]".format(self.tags['commits']), task_id, user_id)
 
 
 class EffortEntry:
@@ -90,8 +99,20 @@ class EffortEntry:
 		self.task_id = task_id
 		self.user_id = user_id
 
-		if None in (self.date, self.minutes_spent, self.description, self.task_id, self.user_id):
-			raise ValueError("This is not a valid EffortEntry.")
+		if self.date is None:
+			raise ValueError("This is not a valid effort entry; its commit is missing a date/time.")
+		elif self.minutes_spent is None:
+			user_input = get_minutes_spent_from_user_input()
+			if user_input is None:
+				raise ValueError("Effort entry discarded as no time spent was provided.")
+			else:
+				self.minutes_spent = user_input
+		elif self.description is None:
+			raise ValueError("This is not a valid effort entry; its commit is missing a description.")
+		elif self.task_id is None:
+			raise ValueError("This is not a valid effort entry; no task could be found matching the story/task tags provided.")
+		elif self.user_id is None:
+			raise ValueError("This is not a valid effort entry; your user ID is missing.")
 
 	def get_post_data(self):
 		return {
@@ -108,7 +129,53 @@ class EffortEntry:
 				"hourEntry.minutesSpent={}\n" +
 				"parentObjectId={}\n" +
 				"userIds={}")\
-				.format(self.date, self.description, self.minutes_spent, self.task_id, self.user_id)
+				.format(self.date, "\n".join(textwrap.wrap(self.description, 100)),
+						self.minutes_spent, self.task_id, self.user_id)
+
+
+def get_minutes_spent_from_user_input():
+	print("This is not a valid effort entry; its commit message does not include the time spent.")
+	if input("Do you want to enter a time spent for this commit? (y/n): ").lower() == "y":
+		while True:
+			try:
+				time_spent = int(input("Enter the time spent on this commit (in minutes): "))
+			except ValueError:
+				print("Incorrect value for time spent. Enter it as an integer.")
+				continue
+			if time_spent <= 0:
+				print("Time spent must be greater than 0.")
+				continue
+			else:
+				# Valid input for time spent
+				return time_spent
+
+	return None
+
+
+def get_story_and_task_tags_from_user_input():
+	while True:
+		try:
+			story_id = int(input("Enter the agilefant iteration id (e.g. 751) for this commit's story: "))
+		except ValueError:
+			print("Story id must be an integer.")
+			continue
+		if story_id <= 0:
+			print("Story id must be greater than 0.")
+			continue
+		else:
+			# Valid input for story id
+			break
+
+	while True:
+		task_id = input("Enter the task id for this commit (e.g. 'a'): ")
+		if task_id == "":
+			print("Task id must not be blank.")
+			continue
+		else:
+			# Valid input for task id
+			break
+
+	return story_id, task_id
 
 
 def separate_commits(log):
@@ -223,14 +290,13 @@ def main():
 			print("\tTask {}: {}".format(task['id'], task['name']))
 
 	for commit in commits:
-		print("\n" + str(commit))
+		print("\n" + str(commit) + "\n")
 		try:
 			entry = commit.build_effort_entry(iteration, user_id=USER_ID)
+			print(entry)
 		except ValueError as exc:
 			print(exc)
 
-	print(entry)
-	post_effort_entry(jsession_id, entry)
 	logout(jsession_id)
 
 
