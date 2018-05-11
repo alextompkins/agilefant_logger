@@ -3,9 +3,8 @@ import textwrap
 import subprocess
 from datetime import datetime, timezone
 from getpass import getpass
-from urllib.error import HTTPError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen, build_opener
+from urllib import urlencode
+from urllib2 import Request, HTTPError, urlopen, build_opener
 from agilogger_config import *
 
 
