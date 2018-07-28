@@ -271,6 +271,10 @@ def post_effort_entry(jsession_id, entry):
 
 
 def main():
+	if (ITERATION_ID == None):
+		print("You need to set ITERATION_ID in 'agilogger_config.py'.")
+		exit()
+
 	username = input("Enter your agilefant username: ")
 	password = getpass("Enter your agilefant password: ")
 

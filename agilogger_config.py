@@ -2,7 +2,7 @@ import re
 
 
 BASE_URL = "http://agilefant.cosc.canterbury.ac.nz:8080/agilefant302/"
-ITERATION_ID = 210
+ITERATION_ID = None  # Set this to the ID of your current sprint in Agilefant
 
 patterns = {
 	'COMMIT': re.compile("commit ([a-f0-9]{40})"),
