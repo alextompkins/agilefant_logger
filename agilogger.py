@@ -64,6 +64,9 @@ class Commit:
 				raise ValueError("Task/story tag is not present, so effort entry cannot be created.")
 
 		task_id = find_task_id(iteration_data, self.tags['story'], self.tags['task'])
+		self.description = self.description\
+			.replace("#story[{}]".format(self.tags['story']), "")\
+			.replace("!task[{}]".format(self.tags['task']), "")
 		return EffortEntry(self.date, self.get_mins_spent(),
 						   self.description + " #commits[{}]".format(self.tags['commits']), task_id, user_id)
 
@@ -176,7 +179,7 @@ def parse_commit(text):
 	for line in text.split("\n"):
 		if patterns['COMMIT'].match(line):
 			commit['commit_hash'] = patterns['COMMIT'].match(line).group(1)
-			
+
 		elif patterns['AUTHOR'].match(line):
 			commit['author'], commit['email'] = patterns['AUTHOR'].match(line).groups()
 
